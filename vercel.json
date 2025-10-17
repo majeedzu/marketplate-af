@@ -1,19 +1,11 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "api/**/*.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/$1" }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
+  "framework": null,
+  "buildCommand": "npm install",
+  "outputDirectory": "public-marketplate",
   "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
+    "api//*.js": {
+      "runtime": "nodejs20.x"
     }
   }
 }
