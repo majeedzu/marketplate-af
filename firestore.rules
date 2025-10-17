@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+    }
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can update their own data (except admin fields)
+      allow update: if isAuthenticated() && isOwner(userId) && 
+        !('type' in request.resource.data) && 
+        !('isAdmin' in request.resource.data);
+      
+      // Only admins can read all users
+      allow read: if isAuthenticated() && isAdmin();
+      
+      // Only admins can create/update admin users
+      allow create, update: if isAuthenticated() && isAdmin();
+    }
+
+    // Products collection
+    match /products/{productId} {
+      // Anyone can read active products
+      allow read: if resource.data.status == 'active' || resource.data.status == null;
+      
+      // Sellers can create products
+      allow create: if isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'seller' &&
+        request.resource.data.sellerId == request.auth.uid;
+      
+      // Sellers can update their own products
+      allow update: if isAuthenticated() && 
+        resource.data.sellerId == request.auth.uid;
+      
+      // Sellers can delete their own products (soft delete)
+      allow update: if isAuthenticated() && 
+        resource.data.sellerId == request.auth.uid &&
+        request.resource.data.status == 'deleted';
+      
+      // Admins can read/update/delete all products
+      allow read, update, delete: if isAuthenticated() && isAdmin();
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      // Users can read their own orders
+      allow read: if isAuthenticated() && 
+        (resource.data.customerId == request.auth.uid || 
+         resource.data.sellerId == request.auth.uid ||
+         resource.data.affiliateId == request.auth.uid);
+      
+      // Users can create orders
+      allow create: if isAuthenticated() && 
+        request.resource.data.customerId == request.auth.uid;
+      
+      // Admins can read all orders
+      allow read: if isAuthenticated() && isAdmin();
+    }
+
+    // Commissions collection
+    match /commissions/{commissionId} {
+      // Affiliates can read their own commissions
+      allow read: if isAuthenticated() && 
+        resource.data.affiliateId == request.auth.uid;
+      
+      // System can create commissions
+      allow create: if isAuthenticated();
+      
+      // Admins can read all commissions
+      allow read: if isAuthenticated() && isAdmin();
+    }
+
+    // Withdrawals collection
+    match /withdrawals/{withdrawalId} {
+      // Users can read their own withdrawals
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can create withdrawals
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Admins can read/update all withdrawals
+      allow read, update: if isAuthenticated() && isAdmin();
+    }
+
+    // Analytics collection (admin only)
+    match /analytics/{document} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+
+    // Admin collection (admin only)
+    match /admin/{document} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPlate - Affiliate Marketplace</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/admin-config.js"></script>
+    <script type="module" src="js/sample-data.js"></script>
+    <script type="module" src="js/app.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1><i class="fas fa-store"></i> MarketPlate</h1>
+            </div>
+            <div class="nav-menu" id="navMenu">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#products" class="nav-link">Products</a>
+                <a href="#affiliate" class="nav-link">Become Affiliate</a>
+                <a href="#seller" class="nav-link">Sell Products</a>
+                <div class="nav-auth" id="navAuth">
+                    <button class="btn btn-outline" onclick="showLogin()">Login</button>
+                    <button class="btn btn-primary" onclick="showRegister()">Register</button>
+                </div>
+                <div class="nav-user" id="navUser" style="display: none;">
+                    <div class="user-menu">
+                        <button class="user-btn" id="userBtn">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="userName">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-dropdown" id="userDropdown">
+                            <a href="#dashboard" onclick="showDashboard()">Dashboard</a>
+                            <a href="#profile" onclick="showProfile()">Profile</a>
+                            <a href="#logout" onclick="logout()">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1>Welcome to MarketPlate</h1>
+                    <p>Ghana's premier affiliate marketplace. Buy, sell, and earn commissions on every transaction.</p>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <h3 id="totalProducts">0</h3>
+                            <p>Products</p>
+                        </div>
+                        <div class="stat">
+                            <h3 id="totalSellers">0</h3>
+                            <p>Sellers</p>
+                        </div>
+                        <div class="stat">
+                            <h3 id="totalAffiliates">0</h3>
+                            <p>Affiliates</p>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-lg" onclick="showSection('products')">
+                            <i class="fas fa-shopping-cart"></i> Shop Now
+                        </button>
+                        <button class="btn btn-outline btn-lg" onclick="showSection('affiliate')">
+                            <i class="fas fa-link"></i> Become Affiliate
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Products -->
+            <div class="featured-products">
+                <h2>Featured Products</h2>
+                <div class="products-grid" id="featuredProducts">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section id="products" class="section">
+            <div class="section-header">
+                <h2>All Products</h2>
+                <div class="filters">
+                    <select id="categoryFilter" onchange="filterProducts()">
+                        <option value="">All Categories</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="fashion">Fashion</option>
+                        <option value="home">Home & Garden</option>
+                        <option value="sports">Sports</option>
+                        <option value="books">Books</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="Search products..." onkeyup="searchProducts()">
+                </div>
+            </div>
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Affiliate Section -->
+        <section id="affiliate" class="section">
+            <div class="affiliate-hero">
+                <h2>Become an Affiliate Marketer</h2>
+                <p>Earn 8% commission on every sale you refer. No upfront costs, no inventory needed.</p>
+                <div class="affiliate-benefits">
+                    <div class="benefit">
+                        <i class="fas fa-percentage"></i>
+                        <h3>8% Commission</h3>
+                        <p>Earn on every successful referral</p>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-link"></i>
+                        <h3>Unique Links</h3>
+                        <p>Get personalized referral links</p>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Real-time Tracking</h3>
+                        <p>Monitor clicks and conversions</p>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <h3>Easy Payouts</h3>
+                        <p>Withdraw earnings via Mobile Money</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="showAffiliateRegister()">
+                    <i class="fas fa-user-plus"></i> Join as Affiliate
+                </button>
+            </div>
+        </section>
+
+        <!-- Seller Section -->
+        <section id="seller" class="section">
+            <div class="seller-hero">
+                <h2>Sell Your Products</h2>
+                <p>Reach thousands of customers and grow your business with MarketPlate.</p>
+                <div class="seller-benefits">
+                    <div class="benefit">
+                        <i class="fas fa-users"></i>
+                        <h3>Wide Reach</h3>
+                        <p>Access to thousands of customers</p>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>Analytics</h3>
+                        <p>Track sales and performance</p>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Secure Payments</h3>
+                        <p>Paystack integration for safe transactions</p>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-headset"></i>
+                        <h3>Support</h3>
+                        <p>24/7 customer support</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="showSellerRegister()">
+                    <i class="fas fa-store"></i> Start Selling
+                </button>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section">
+            <div class="dashboard-container">
+                <div class="dashboard-sidebar">
+                    <h3>Dashboard</h3>
+                    <nav class="dashboard-nav">
+                        <a href="#overview" class="dashboard-link active" onclick="showDashboardTab('overview')">
+                            <i class="fas fa-chart-pie"></i> Overview
+                        </a>
+                        <a href="#products" class="dashboard-link" onclick="showDashboardTab('products')">
+                            <i class="fas fa-box"></i> Products
+                        </a>
+                        <a href="#orders" class="dashboard-link" onclick="showDashboardTab('orders')">
+                            <i class="fas fa-shopping-cart"></i> Orders
+                        </a>
+                        <a href="#earnings" class="dashboard-link" onclick="showDashboardTab('earnings')">
+                            <i class="fas fa-money-bill-wave"></i> Earnings
+                        </a>
+                        <a href="#affiliate-links" class="dashboard-link" onclick="showDashboardTab('affiliate-links')">
+                            <i class="fas fa-link"></i> Affiliate Links
+                        </a>
+                        <a href="#withdrawals" class="dashboard-link" onclick="showDashboardTab('withdrawals')">
+                            <i class="fas fa-credit-card"></i> Withdrawals
+                        </a>
+                        <!-- Admin Navigation (only visible to admin users) -->
+                        <div id="adminNav" style="display: none;">
+                            <hr style="margin: 20px 0; border: 1px solid #e5e7eb;">
+                            <h4 style="color: #64748b; margin-bottom: 15px; font-size: 0.9rem; text-transform: uppercase;">Admin Panel</h4>
+                            <a href="#admin-users" class="dashboard-link" onclick="showDashboardTab('admin-users')">
+                                <i class="fas fa-users"></i> All Users
+                            </a>
+                            <a href="#admin-products" class="dashboard-link" onclick="showDashboardTab('admin-products')">
+                                <i class="fas fa-boxes"></i> All Products
+                            </a>
+                            <a href="#admin-orders" class="dashboard-link" onclick="showDashboardTab('admin-orders')">
+                                <i class="fas fa-shopping-cart"></i> All Orders
+                            </a>
+                            <a href="#admin-withdrawals" class="dashboard-link" onclick="showDashboardTab('admin-withdrawals')">
+                                <i class="fas fa-money-bill-wave"></i> Withdrawal Requests
+                            </a>
+                            <a href="#admin-commissions" class="dashboard-link" onclick="showDashboardTab('admin-commissions')">
+                                <i class="fas fa-percentage"></i> All Commissions
+                            </a>
+                            <a href="#admin-analytics" class="dashboard-link" onclick="showDashboardTab('admin-analytics')">
+                                <i class="fas fa-chart-bar"></i> Platform Analytics
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+                <div class="dashboard-content">
+                    <div id="dashboardOverview" class="dashboard-tab active">
+                        <h2>Overview</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3 id="dashboardTotalSales">₵0</h3>
+                                <p>Total Sales</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3 id="dashboardTotalEarnings">₵0</h3>
+                                <p>Total Earnings</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3 id="dashboardTotalOrders">0</h3>
+                                <p>Total Orders</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3 id="dashboardPendingBalance">₵0</h3>
+                                <p>Pending Balance</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dashboardProducts" class="dashboard-tab">
+                        <div class="dashboard-header">
+                            <h2>My Products</h2>
+                            <button class="btn btn-primary" onclick="showAddProduct()">
+                                <i class="fas fa-plus"></i> Add Product
+                            </button>
+                        </div>
+                        <div class="products-list" id="dashboardProductsList">
+                            <!-- Products will be loaded here -->
+                        </div>
+                    </div>
+                    <div id="dashboardOrders" class="dashboard-tab">
+                        <h2>Orders</h2>
+                        <div class="orders-list" id="dashboardOrdersList">
+                            <!-- Orders will be loaded here -->
+                        </div>
+                    </div>
+                    <div id="dashboardEarnings" class="dashboard-tab">
+                        <h2>Earnings</h2>
+                        <div class="earnings-chart" id="earningsChart">
+                            <!-- Earnings chart will be loaded here -->
+                        </div>
+                    </div>
+                    <div id="dashboardAffiliateLinks" class="dashboard-tab">
+                        <h2>Affiliate Links</h2>
+                        <div class="affiliate-links" id="affiliateLinksList">
+                            <!-- Affiliate links will be loaded here -->
+                        </div>
+                    </div>
+                    <div id="dashboardWithdrawals" class="dashboard-tab">
+                        <h2>Withdrawals</h2>
+                        <div class="withdrawal-form">
+                            <h3>Request Withdrawal</h3>
+                            <form id="withdrawalForm">
+                                <div class="form-group">
+                                    <label>Amount (Minimum ₵10)</label>
+                                    <input type="number" id="withdrawalAmount" min="10" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mobile Money Number</label>
+                                    <input type="tel" id="withdrawalMomo" placeholder="e.g., 0241234567" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Request Withdrawal</button>
+                            </form>
+                        </div>
+                        <div class="withdrawal-history" id="withdrawalHistory">
+                            <!-- Withdrawal history will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Admin Dashboard Tabs -->
+                    <div id="dashboardAdminUsers" class="dashboard-tab">
+                        <div class="dashboard-header">
+                            <h2>All Users</h2>
+                            <div class="admin-filters">
+                                <select id="userTypeFilter" onchange="filterUsers()">
+                                    <option value="">All Types</option>
+                                    <option value="customer">Customers</option>
+                                    <option value="seller">Sellers</option>
+                                    <option value="affiliate">Affiliates</option>
+                                    <option value="admin">Admins</option>
+                                </select>
+                                <input type="text" id="userSearchInput" placeholder="Search users..." onkeyup="searchUsers()">
+                            </div>
+                        </div>
+                        <div class="admin-table-container">
+                            <div class="admin-table" id="adminUsersTable">
+                                <!-- Users will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dashboardAdminProducts" class="dashboard-tab">
+                        <div class="dashboard-header">
+                            <h2>All Products</h2>
+                            <div class="admin-filters">
+                                <select id="productStatusFilter" onchange="filterAdminProducts()">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="deleted">Deleted</option>
+                                </select>
+                                <input type="text" id="productSearchInput" placeholder="Search products..." onkeyup="searchAdminProducts()">
+                            </div>
+                        </div>
+                        <div class="admin-table-container">
+                            <div class="admin-table" id="adminProductsTable">
+                                <!-- Products will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dashboardAdminOrders" class="dashboard-tab">
+                        <div class="dashboard-header">
+                            <h2>All Orders</h2>
+                            <div class="admin-filters">
+                                <select id="orderStatusFilter" onchange="filterAdminOrders()">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                                <input type="date" id="orderDateFilter" onchange="filterAdminOrders()">
+                            </div>
+                        </div>
+                        <div class="admin-table-container">
+                            <div class="admin-table" id="adminOrdersTable">
+                                <!-- Orders will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dashboardAdminWithdrawals" class="dashboard-tab">
+                        <div class="dashboard-header">
+                            <h2>Withdrawal Requests</h2>
+                            <div class="admin-filters">
+                                <select id="withdrawalStatusFilter" onchange="filterAdminWithdrawals()">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="admin-table-container">
+                            <div class="admin-table" id="adminWithdrawalsTable">
+                                <!-- Withdrawals will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dashboardAdminCommissions" class="dashboard-tab">
+                        <div class="dashboard-header">
+                            <h2>All Commissions</h2>
+                            <div class="admin-filters">
+                                <select id="commissionStatusFilter" onchange="filterAdminCommissions()">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="admin-table-container">
+                            <div class="admin-table" id="adminCommissionsTable">
+                                <!-- Commissions will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dashboardAdminAnalytics" class="dashboard-tab">
+                        <h2>Platform Analytics</h2>
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <h3>Total Revenue</h3>
+                                <div class="analytics-value" id="totalRevenue">₵0.00</div>
+                                <div class="analytics-change" id="revenueChange">+0% this month</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h3>Total Users</h3>
+                                <div class="analytics-value" id="totalUsersCount">0</div>
+                                <div class="analytics-breakdown" id="usersBreakdown">
+                                    <span>Customers: 0</span>
+                                    <span>Sellers: 0</span>
+                                    <span>Affiliates: 0</span>
+                                </div>
+                            </div>
+                            <div class="analytics-card">
+                                <h3>Total Orders</h3>
+                                <div class="analytics-value" id="totalOrdersCount">0</div>
+                                <div class="analytics-change" id="ordersChange">+0% this month</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h3>Active Products</h3>
+                                <div class="analytics-value" id="activeProductsCount">0</div>
+                                <div class="analytics-change" id="productsChange">+0% this month</div>
+                            </div>
+                        </div>
+                        <div class="analytics-charts">
+                            <div class="chart-container">
+                                <h3>Revenue Trend (Last 30 Days)</h3>
+                                <div class="chart-placeholder" id="revenueChart">
+                                    <p>Chart will be displayed here</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <h3>User Growth</h3>
+                                <div class="chart-placeholder" id="userGrowthChart">
+                                    <p>Chart will be displayed here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="section">
+            <div class="dashboard-container">
+                <div class="dashboard-content" style="max-width: 800px; margin: 0 auto;">
+                    <h2>My Profile</h2>
+                    <div class="profile-info">
+                        <form id="profileForm">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="profileName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="profileEmail" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>User Type</label>
+                                <input type="text" id="profileType" disabled>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Login to MarketPlate</h2>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                </form>
+                <div class="auth-links">
+                    <p><a href="#" onclick="closeModal('loginModal'); showForgotPassword();">Forgot Password?</a></p>
+                    <p>Don't have an account? <a href="#" onclick="closeModal('loginModal'); showRegister();">Register here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Create Account</h2>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="registerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="registerPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="registerConfirmPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>User Type</label>
+                        <select id="registerType" required>
+                            <option value="">Select Type</option>
+                            <option value="customer">Customer</option>
+                            <option value="seller">Seller</option>
+                            <option value="affiliate">Affiliate</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+                </form>
+                <div class="auth-links">
+                    <p>Already have an account? <a href="#" onclick="closeModal('registerModal'); showLogin();">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('forgotPasswordModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Reset Password</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #64748b;">Enter your email address and we'll send you a link to reset your password.</p>
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="forgotPasswordEmail" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Reset Link</button>
+                </form>
+                <div class="auth-links">
+                    <p><a href="#" onclick="closeModal('forgotPasswordModal'); showLogin();">Back to Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('productModal')">&times;</span>
+            <div class="modal-body" id="productModalContent">
+                <!-- Product details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addProductModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Add New Product</h2>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="productDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Price (₵)</label>
+                        <input type="number" id="productPrice" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="productCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="fashion">Fashion</option>
+                            <option value="home">Home & Garden</option>
+                            <option value="sports">Sports</option>
+                            <option value="books">Books</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Image</label>
+                        <input type="file" id="productImage" accept="image/*" required>
+                        <div class="image-preview" id="imagePreview">
+                            <p>Image preview will appear here</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Quantity</label>
+                        <input type="number" id="productStock" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+</body>
+</html>
