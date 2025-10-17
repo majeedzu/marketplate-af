@@ -17,8 +17,10 @@
   "author": "MarketPlate Team",
   "license": "MIT",
   "dependencies": {
-    "@vercel/kv": "latest",
     "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
