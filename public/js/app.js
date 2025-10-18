@@ -1,16 +1,4 @@
-// Import Firebase functions
-import { 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    signOut,
-    sendEmailVerification,
-    sendPasswordResetEmail
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { 
-    ref, 
-    uploadBytes, 
-    getDownloadURL 
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+// API-based app (no Firebase imports needed)
 
 // Global variables
 let currentSection = 'home';
@@ -21,9 +9,13 @@ let commissions = [];
 let selectedImageFile = null;
 
 // Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     initializeApp();
     setupEventListeners();
+    
+    // Check if user is already logged in
+    await window.api.getCurrentUser();
+    
     loadInitialData();
 });
 
@@ -149,17 +141,15 @@ function handleImageSelect(e) {
 
 async function uploadImage(file) {
     if (!file) throw new Error('No file selected');
-    
-    const timestamp = Date.now();
-    const fileName = `products/${timestamp}_${file.name}`;
-    const storageRef = ref(window.firebase.storage, fileName);
-    
     showToast('Uploading image...', 'info');
-    
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    
-    return downloadURL;
+    try {
+        const imageUrl = await window.api.uploadImage(file);
+        console.log('Image uploaded. URL:', imageUrl);
+        return imageUrl;
+    } catch (err) {
+        console.error('Image upload failed:', err);
+        throw err;
+    }
 }
 
 // Authentication functions
@@ -177,32 +167,18 @@ async function handleLogin(e) {
     showLoading(true);
     
     try {
-        const userCredential = await signInWithEmailAndPassword(window.firebase.auth, email, password);
+        const response = await window.api.login(email, password);
         
-        // Check if email is verified
-        if (!userCredential.user.emailVerified) {
-            showToast('Please verify your email before logging in. Check your inbox.', 'warning');
-            await signOut(window.firebase.auth);
-            showLoading(false);
-            return;
+        if (response.success) {
+            showToast('Login successful!', 'success');
+            closeModal('loginModal');
+            showSection('dashboard');
+        } else {
+            showToast(response.error || 'Login failed', 'error');
         }
-        
-        showToast('Login successful!', 'success');
-        closeModal('loginModal');
-        showSection('dashboard');
     } catch (error) {
         console.error('Login error:', error);
-        let errorMessage = 'Login failed. Please check your credentials.';
-        
-        if (error.code === 'auth/user-not-found') {
-            errorMessage = 'No account found with this email.';
-        } else if (error.code === 'auth/wrong-password') {
-            errorMessage = 'Incorrect password.';
-        } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Invalid email address.';
-        }
-        
-        showToast(errorMessage, 'error');
+        showToast(error.message || 'Login failed. Please check your credentials.', 'error');
     } finally {
         showLoading(false);
     }
@@ -235,44 +211,23 @@ async function handleRegister(e) {
     showLoading(true);
     
     try {
-        const userCredential = await createUserWithEmailAndPassword(window.firebase.auth, email, password);
-        const user = userCredential.user;
-        
-        // Send email verification
-        await sendEmailVerification(user);
-        
-        // Create user document in Firestore
-        await window.firebase.setDoc(window.firebase.doc(window.firebase.db, 'users', user.uid), {
-            name: name,
-            email: email,
-            type: type,
-            createdAt: new Date(),
-            balance: 0,
-            totalEarnings: 0,
-            totalSales: 0,
-            emailVerified: false
+        const response = await window.api.register({
+            name,
+            email,
+            password,
+            type
         });
         
-        showToast('Registration successful! Please check your email to verify your account.', 'success');
-        closeModal('registerModal');
-        document.getElementById('registerForm').reset();
-        
-        // Sign out user until they verify email
-        await signOut(window.firebase.auth);
-        
+        if (response.success) {
+            showToast('Registration successful!', 'success');
+            closeModal('registerModal');
+            document.getElementById('registerForm').reset();
+        } else {
+            showToast(response.error || 'Registration failed', 'error');
+        }
     } catch (error) {
         console.error('Registration error:', error);
-        let errorMessage = 'Registration failed. Please try again.';
-        
-        if (error.code === 'auth/email-already-in-use') {
-            errorMessage = 'An account with this email already exists.';
-        } else if (error.code === 'auth/weak-password') {
-            errorMessage = 'Password is too weak. Please choose a stronger password.';
-        } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Please enter a valid email address.';
-        }
-        
-        showToast(errorMessage, 'error');
+        showToast(error.message || 'Registration failed. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
@@ -291,21 +246,13 @@ async function handleForgotPassword(e) {
     showLoading(true);
     
     try {
-        await sendPasswordResetEmail(window.firebase.auth, email);
-        showToast('Password reset email sent! Check your inbox.', 'success');
+        // TODO: Implement password reset API endpoint
+        showToast('Password reset feature coming soon!', 'info');
         closeModal('forgotPasswordModal');
         document.getElementById('forgotPasswordForm').reset();
     } catch (error) {
         console.error('Password reset error:', error);
-        let errorMessage = 'Failed to send reset email. Please try again.';
-        
-        if (error.code === 'auth/user-not-found') {
-            errorMessage = 'No account found with this email.';
-        } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Please enter a valid email address.';
-        }
-        
-        showToast(errorMessage, 'error');
+        showToast('Failed to send reset email. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
@@ -313,7 +260,7 @@ async function handleForgotPassword(e) {
 
 async function logout() {
     try {
-        await signOut(window.firebase.auth);
+        await window.api.logout();
         showToast('Logged out successfully', 'success');
         showSection('home');
     } catch (error) {
@@ -348,22 +295,15 @@ async function handleAddProduct(e) {
         // Upload image first
         const imageUrl = await uploadImage(selectedImageFile);
         
-        // Add product to Firestore
-        await window.firebase.addDoc(
-            window.firebase.collection(window.firebase.db, 'products'),
-            {
-                name: name,
-                description: description,
-                price: price,
-                category: category,
-                image: imageUrl,
-                stock: stock,
-                sellerId: window.currentUser.uid,
-                sellerName: window.currentUser.displayName || 'Unknown Seller',
-                status: 'active',
-                createdAt: new Date()
-            }
-        );
+        // Add product via API
+        await window.api.createProduct({
+            name,
+            description,
+            price,
+            category,
+            imageUrl,
+            stock
+        });
         
         showToast('Product added successfully!', 'success');
         closeModal('addProductModal');
@@ -375,7 +315,7 @@ async function handleAddProduct(e) {
         
     } catch (error) {
         console.error('Error adding product:', error);
-        showToast('Error adding product. Please try again.', 'error');
+        showToast(error?.message || 'Error adding product. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
@@ -384,36 +324,7 @@ async function handleAddProduct(e) {
 // Load products
 async function loadProducts() {
     try {
-        let productsSnapshot;
-        try {
-            productsSnapshot = await window.firebase.getDocs(
-                window.firebase.query(
-                    window.firebase.collection(window.firebase.db, 'products'),
-                    window.firebase.where('status', '==', 'active'),
-                    window.firebase.orderBy('createdAt', 'desc')
-                )
-            );
-        } catch (indexError) {
-            console.warn('Complex query failed, trying simple query:', indexError);
-            productsSnapshot = await window.firebase.getDocs(
-                window.firebase.collection(window.firebase.db, 'products')
-            );
-        }
-        
-        products = [];
-        productsSnapshot.forEach(doc => {
-            const data = doc.data();
-            if (!data.status || data.status === 'active') {
-                products.push({ id: doc.id, ...data });
-            }
-        });
-        
-        products.sort((a, b) => {
-            if (a.createdAt && b.createdAt) {
-                return b.createdAt.toDate() - a.createdAt.toDate();
-            }
-            return 0;
-        });
+        products = await window.api.getProducts();
         
         displayProducts(products, 'productsGrid');
         displayProducts(products.slice(0, 6), 'featuredProducts');
@@ -436,7 +347,7 @@ function displayProducts(productsArray, containerId) {
     
     container.innerHTML = productsArray.map(product => `
         <div class="product-card" onclick="showProductDetails('${product.id}')">
-            <img src="${product.image}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+            <img src="${product.image_url}" alt="${product.name}" class="product-image" onerror="this.src='https://placehold.co/300x200?text=No+Image'">
             <div class="product-info">
                 <h3 class="product-name">${product.name}</h3>
                 <p class="product-description">${product.description}</p>
@@ -540,18 +451,7 @@ async function loadDashboardData() {
 
 async function loadUserProducts() {
     try {
-        const productsSnapshot = await window.firebase.getDocs(
-            window.firebase.query(
-                window.firebase.collection(window.firebase.db, 'products'),
-                window.firebase.where('sellerId', '==', window.currentUser.uid)
-            )
-        );
-        
-        const userProducts = [];
-        productsSnapshot.forEach(doc => {
-            userProducts.push({ id: doc.id, ...doc.data() });
-        });
-        
+        const userProducts = await window.api.getProducts({ sellerId: window.currentUser.id });
         displayUserProducts(userProducts);
     } catch (error) {
         console.error('Error loading user products:', error);
@@ -569,7 +469,7 @@ function displayUserProducts(productsArray) {
     
     container.innerHTML = productsArray.map(product => `
         <div class="product-item">
-            <img src="${product.image}" alt="${product.name}" class="product-item-image">
+            <img src="${product.image_url}" alt="${product.name}" class="product-item-image">
             <div class="product-item-info">
                 <h4>${product.name}</h4>
                 <p>₵${product.price.toFixed(2)} • Stock: ${product.stock}</p>
@@ -585,18 +485,7 @@ function displayUserProducts(productsArray) {
 
 async function loadUserOrders() {
     try {
-        const ordersSnapshot = await window.firebase.getDocs(
-            window.firebase.query(
-                window.firebase.collection(window.firebase.db, 'orders'),
-                window.firebase.where('customerId', '==', window.currentUser.uid)
-            )
-        );
-        
-        orders = [];
-        ordersSnapshot.forEach(doc => {
-            orders.push({ id: doc.id, ...doc.data() });
-        });
-        
+        orders = await window.api.getOrders();
         displayUserOrders(orders);
     } catch (error) {
         console.error('Error loading user orders:', error);
@@ -626,18 +515,7 @@ function displayUserOrders(ordersArray) {
 
 async function loadUserCommissions() {
     try {
-        const commissionsSnapshot = await window.firebase.getDocs(
-            window.firebase.query(
-                window.firebase.collection(window.firebase.db, 'commissions'),
-                window.firebase.where('affiliateId', '==', window.currentUser.uid)
-            )
-        );
-        
-        commissions = [];
-        commissionsSnapshot.forEach(doc => {
-            commissions.push({ id: doc.id, ...doc.data() });
-        });
-        
+        commissions = await window.api.getCommissions();
         displayUserCommissions(commissions);
     } catch (error) {
         console.error('Error loading user commissions:', error);
@@ -666,18 +544,7 @@ function displayUserCommissions(commissionsArray) {
 
 async function loadUserWithdrawals() {
     try {
-        const withdrawalsSnapshot = await window.firebase.getDocs(
-            window.firebase.query(
-                window.firebase.collection(window.firebase.db, 'withdrawals'),
-                window.firebase.where('userId', '==', window.currentUser.uid)
-            )
-        );
-        
-        const withdrawals = [];
-        withdrawalsSnapshot.forEach(doc => {
-            withdrawals.push({ id: doc.id, ...doc.data() });
-        });
-        
+        const withdrawals = await window.api.getWithdrawals();
         displayUserWithdrawals(withdrawals);
     } catch (error) {
         console.error('Error loading user withdrawals:', error);
@@ -707,17 +574,11 @@ function displayUserWithdrawals(withdrawalsArray) {
 
 async function updateDashboardStats() {
     try {
-        const userDoc = await window.firebase.getDoc(
-            window.firebase.doc(window.firebase.db, 'users', window.currentUser.uid)
-        );
-        
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            document.getElementById('dashboardTotalSales').textContent = `₵${userData.totalEarnings?.toFixed(2) || '0.00'}`;
-            document.getElementById('dashboardTotalEarnings').textContent = `₵${userData.totalEarnings?.toFixed(2) || '0.00'}`;
-            document.getElementById('dashboardTotalOrders').textContent = userData.totalSales || '0';
-            document.getElementById('dashboardPendingBalance').textContent = `₵${userData.balance?.toFixed(2) || '0.00'}`;
+        if (window.currentUser) {
+            document.getElementById('dashboardTotalSales').textContent = `₵${window.currentUser.total_earnings?.toFixed(2) || '0.00'}`;
+            document.getElementById('dashboardTotalEarnings').textContent = `₵${window.currentUser.total_earnings?.toFixed(2) || '0.00'}`;
+            document.getElementById('dashboardTotalOrders').textContent = window.currentUser.total_sales || '0';
+            document.getElementById('dashboardPendingBalance').textContent = `₵${window.currentUser.balance?.toFixed(2) || '0.00'}`;
         }
     } catch (error) {
         console.error('Error updating dashboard stats:', error);
@@ -740,17 +601,7 @@ async function handleWithdrawal(e) {
         return;
     }
     
-    const userDoc = await window.firebase.getDoc(
-        window.firebase.doc(window.firebase.db, 'users', window.currentUser.uid)
-    );
-    
-    if (!userDoc.exists()) {
-        showToast('User data not found', 'error');
-        return;
-    }
-    
-    const userData = userDoc.data();
-    if (userData.balance < amount) {
+    if (window.currentUser.balance < amount) {
         showToast('Insufficient balance', 'error');
         return;
     }
@@ -758,23 +609,10 @@ async function handleWithdrawal(e) {
     showLoading(true);
     
     try {
-        await window.firebase.addDoc(
-            window.firebase.collection(window.firebase.db, 'withdrawals'),
-            {
-                userId: window.currentUser.uid,
-                amount: amount,
-                momoNumber: momoNumber,
-                status: 'pending',
-                createdAt: new Date()
-            }
-        );
-        
-        await window.firebase.updateDoc(
-            window.firebase.doc(window.firebase.db, 'users', window.currentUser.uid),
-            {
-                balance: window.firebase.increment(-amount)
-            }
-        );
+        await window.api.createWithdrawal({
+            amount,
+            momoNumber
+        });
         
         showToast('Withdrawal request submitted successfully!', 'success');
         document.getElementById('withdrawalForm').reset();
@@ -791,21 +629,11 @@ async function handleWithdrawal(e) {
 
 async function loadStats() {
     try {
-        const statsDoc = await window.firebase.getDoc(
-            window.firebase.doc(window.firebase.db, 'analytics', 'platform')
-        );
+        const stats = await window.api.getPlatformStats();
         
-        if (statsDoc.exists()) {
-            const stats = statsDoc.data();
-            
-            document.getElementById('totalProducts').textContent = stats.totalProducts || '0';
-            document.getElementById('totalSellers').textContent = stats.totalSellers || '0';
-            document.getElementById('totalAffiliates').textContent = stats.totalAffiliates || '0';
-        } else {
-            document.getElementById('totalProducts').textContent = '0';
-            document.getElementById('totalSellers').textContent = '0';
-            document.getElementById('totalAffiliates').textContent = '0';
-        }
+        document.getElementById('totalProducts').textContent = stats.products?.active || '0';
+        document.getElementById('totalSellers').textContent = stats.users?.sellers || '0';
+        document.getElementById('totalAffiliates').textContent = stats.users?.affiliates || '0';
     } catch (error) {
         console.error('Error loading stats:', error);
         document.getElementById('totalProducts').textContent = '0';
@@ -822,7 +650,7 @@ function showProductDetails(productId) {
     modalContent.innerHTML = `
         <div class="product-details">
             <div class="product-details-image">
-                <img src="${product.image}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'">
+                <img src="${product.image_url}" alt="${product.name}" onerror="this.src='https://placehold.co/400x300?text=No+Image'">
             </div>
             <div class="product-details-info">
                 <h2>${product.name}</h2>
@@ -831,7 +659,7 @@ function showProductDetails(productId) {
                 <div class="product-details-meta">
                     <p><strong>Category:</strong> ${product.category}</p>
                     <p><strong>Stock:</strong> ${product.stock}</p>
-                    <p><strong>Seller:</strong> ${product.sellerName}</p>
+                    <p><strong>Seller:</strong> ${product.seller_name}</p>
                 </div>
                 <button class="btn btn-primary btn-lg" onclick="buyProduct('${product.id}')">
                     <i class="fas fa-shopping-cart"></i> Buy Now - ₵${product.price.toFixed(2)}
@@ -1078,10 +906,7 @@ window.editProduct = (productId) => {
 window.deleteProduct = async (productId) => {
     if (confirm('Are you sure you want to delete this product?')) {
         try {
-            await window.firebase.updateDoc(
-                window.firebase.doc(window.firebase.db, 'products', productId),
-                { status: 'deleted' }
-            );
+            await window.api.updateProduct(productId, { status: 'deleted' });
             showToast('Product deleted successfully', 'success');
             await loadUserProducts();
         } catch (error) {
@@ -1096,22 +921,8 @@ async function loadAllUsers() {
     if (!window.currentUser) return;
     
     try {
-        const idToken = await window.currentUser.getIdToken();
-        const response = await fetch('/api/get-all-users', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            displayAllUsers(data.users);
-        } else {
-            showToast('Error loading users: ' + data.error, 'error');
-        }
+        const users = await window.api.getAllUsers();
+        displayAllUsers(users);
     } catch (error) {
         console.error('Error loading users:', error);
         showToast('Error loading users', 'error');
@@ -1155,15 +966,7 @@ function displayAllUsers(users) {
 
 async function loadAllProducts() {
     try {
-        const productsSnapshot = await window.firebase.getDocs(
-            window.firebase.collection(window.firebase.db, 'products')
-        );
-        
-        const products = [];
-        productsSnapshot.forEach(doc => {
-            products.push({ id: doc.id, ...doc.data() });
-        });
-        
+        const products = await window.api.getAllProducts();
         displayAllProducts(products);
     } catch (error) {
         console.error('Error loading products:', error);
@@ -1214,15 +1017,7 @@ function displayAllProducts(products) {
 
 async function loadAllOrders() {
     try {
-        const ordersSnapshot = await window.firebase.getDocs(
-            window.firebase.collection(window.firebase.db, 'orders')
-        );
-        
-        const orders = [];
-        ordersSnapshot.forEach(doc => {
-            orders.push({ id: doc.id, ...doc.data() });
-        });
-        
+        const orders = await window.api.getAllOrders();
         displayAllOrders(orders);
     } catch (error) {
         console.error('Error loading orders:', error);
@@ -1269,22 +1064,8 @@ async function loadAllWithdrawals() {
     if (!window.currentUser) return;
     
     try {
-        const idToken = await window.currentUser.getIdToken();
-        const response = await fetch('/api/get-all-withdrawals', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            displayAllWithdrawals(data.withdrawals);
-        } else {
-            showToast('Error loading withdrawals: ' + data.error, 'error');
-        }
+        const withdrawals = await window.api.getAllWithdrawals();
+        displayAllWithdrawals(withdrawals);
     } catch (error) {
         console.error('Error loading withdrawals:', error);
         showToast('Error loading withdrawals', 'error');
@@ -1335,15 +1116,7 @@ function displayAllWithdrawals(withdrawals) {
 
 async function loadAllCommissions() {
     try {
-        const commissionsSnapshot = await window.firebase.getDocs(
-            window.firebase.collection(window.firebase.db, 'commissions')
-        );
-        
-        const commissions = [];
-        commissionsSnapshot.forEach(doc => {
-            commissions.push({ id: doc.id, ...doc.data() });
-        });
-        
+        const commissions = await window.api.getAllCommissions();
         displayAllCommissions(commissions);
     } catch (error) {
         console.error('Error loading commissions:', error);
@@ -1388,22 +1161,8 @@ async function loadPlatformAnalytics() {
     if (!window.currentUser) return;
     
     try {
-        const idToken = await window.currentUser.getIdToken();
-        const response = await fetch('/api/get-platform-stats', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            displayPlatformAnalytics(data.stats);
-        } else {
-            showToast('Error loading analytics: ' + data.error, 'error');
-        }
+        const stats = await window.api.getPlatformStats();
+        displayPlatformAnalytics(stats);
     } catch (error) {
         console.error('Error loading analytics:', error);
         showToast('Error loading analytics', 'error');
@@ -1441,23 +1200,9 @@ async function approveWithdrawal(withdrawalId) {
     }
     
     try {
-        const idToken = await window.currentUser.getIdToken();
-        const response = await fetch('/api/approve-withdrawal', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken, withdrawalId })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast('Withdrawal approved successfully', 'success');
-            loadAllWithdrawals();
-        } else {
-            showToast('Error approving withdrawal: ' + data.error, 'error');
-        }
+        await window.api.approveWithdrawal(withdrawalId);
+        showToast('Withdrawal approved successfully', 'success');
+        loadAllWithdrawals();
     } catch (error) {
         console.error('Error approving withdrawal:', error);
         showToast('Error approving withdrawal', 'error');
@@ -1475,23 +1220,9 @@ async function rejectWithdrawal(withdrawalId) {
     }
     
     try {
-        const idToken = await window.currentUser.getIdToken();
-        const response = await fetch('/api/reject-withdrawal', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken, withdrawalId, reason })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast('Withdrawal rejected and amount refunded', 'success');
-            loadAllWithdrawals();
-        } else {
-            showToast('Error rejecting withdrawal: ' + data.error, 'error');
-        }
+        await window.api.rejectWithdrawal(withdrawalId, reason);
+        showToast('Withdrawal rejected and amount refunded', 'success');
+        loadAllWithdrawals();
     } catch (error) {
         console.error('Error rejecting withdrawal:', error);
         showToast('Error rejecting withdrawal', 'error');
@@ -1504,10 +1235,7 @@ async function deleteProductAsAdmin(productId) {
     }
     
     try {
-        await window.firebase.updateDoc(
-            window.firebase.doc(window.firebase.db, 'products', productId),
-            { status: 'deleted' }
-        );
+        await window.api.updateProduct(productId, { status: 'deleted' });
         showToast('Product deleted successfully', 'success');
         loadAllProducts();
     } catch (error) {

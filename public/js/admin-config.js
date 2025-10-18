@@ -109,9 +109,7 @@ window.initializeAdmin = initializeAdmin;
 window.isCurrentUserAdmin = isCurrentUserAdmin;
 window.showAdminNavigation = showAdminNavigation;
 
-// Initialize admin when Firebase is ready
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initializeAdmin, 2000); // Wait for Firebase to initialize
-});
+// Admin auto-initialization disabled for security in production.
+// Create an admin user via the app then promote in Firestore (users/{uid}).
 
 console.log('Admin configuration loaded');

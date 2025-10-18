@@ -1,272 +1,146 @@
-# MarketPlate - Affiliate Marketplace Platform
+# MarketPlate - Full Vercel Migration
 
-MarketPlate is Ghana's premier affiliate marketplace platform that connects sellers, affiliates, and customers in a seamless e-commerce ecosystem. Built with modern web technologies and deployed on Vercel.
+A complete affiliate marketplace platform built with Vercel Postgres, Vercel Blob, and JWT authentication.
 
-## 🚀 Features
+## Features
 
-### For Customers
-- Browse and purchase products from verified sellers
-- Secure payment processing via Paystack
-- Mobile Money integration for Ghana market
-- Product search and filtering
+- **User Management**: Registration, login, user roles (customer, seller, affiliate, admin)
+- **Product Management**: Create, read, update, delete products with image uploads
+- **Order Processing**: Complete order flow with payment integration
+- **Affiliate System**: Commission tracking and management
+- **Withdrawal System**: Mobile Money withdrawal requests
+- **Admin Dashboard**: Complete admin panel for platform management
 
-### For Sellers
-- Easy product listing and management
-- Real-time sales analytics
-- Secure payment processing
-- Inventory management
-- Commission tracking
+## Tech Stack
 
-### For Affiliates
-- 8% commission on successful referrals
-- Unique affiliate links generation
-- Real-time earnings tracking
-- Easy withdrawal system
-- Performance analytics
-
-### For Administrators
-- Comprehensive admin dashboard
-- User management (customers, sellers, affiliates)
-- Product approval and management
-- Order monitoring and tracking
-- Withdrawal request approval system
-- Platform analytics and insights
-- Commission oversight
-
-## 🛠️ Technology Stack
-
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Backend**: Firebase (Authentication, Firestore, Storage)
-- **Payment**: Paystack API
+- **Frontend**: Vanilla JavaScript, HTML, CSS
+- **Backend**: Vercel Serverless Functions
+- **Database**: Vercel Postgres
+- **Storage**: Vercel Blob
+- **Authentication**: JWT with bcrypt
 - **Deployment**: Vercel
-- **Serverless Functions**: Node.js with Firebase Admin SDK
 
-## 📋 Prerequisites
+## Setup Instructions
 
-Before you begin, ensure you have:
+### 1. Vercel Project Setup
 
-1. **Node.js** (v18 or higher)
-2. **Firebase account** and project
-3. **Paystack account** for payment processing
-4. **Vercel account** for deployment
-5. **Git** for version control
+1. Create a new Vercel project
+2. Connect your GitHub repository
+3. Set up Vercel Postgres database
+4. Set up Vercel Blob storage
 
-## 🔧 Setup Instructions
+### 2. Environment Variables
 
-### 1. Clone the Repository
+Set these environment variables in your Vercel project:
 
 ```bash
-git clone <your-repository-url>
-cd public-marketplate
+# Database
+DATABASE_URL=your_vercel_postgres_connection_string
+
+# JWT Secret (generate a strong secret)
+JWT_SECRET=your_jwt_secret_key
+
+# Vercel Blob
+BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
 ```
 
-### 2. Firebase Configuration
+### 3. Database Initialization
 
-1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com/)
-2. Enable the following services:
-   - Authentication (Email/Password)
-   - Firestore Database
-   - Storage
-3. Get your Firebase configuration from Project Settings
-4. Update `js/firebase-config.js` with your Firebase config
-
-### 3. Firebase Admin SDK Setup
-
-1. Go to Firebase Console → Project Settings → Service Accounts
-2. Generate a new private key
-3. Download the JSON file
-4. Extract the following values:
-   - `project_id`
-   - `client_email`
-   - `private_key`
-
-### 4. Paystack Configuration
-
-1. Create a Paystack account at [Paystack](https://paystack.com/)
-2. Get your API keys from the dashboard
-3. Update the Paystack configuration in `js/firebase-config.js`
-
-### 5. Environment Variables
-
-1. Copy `env.template` to `.env.local`
-2. Fill in your environment variables:
+After deploying, call the initialization endpoint to create tables:
 
 ```bash
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-service-account-email
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----\n"
-
-# Paystack Configuration
-PAYSTACK_SECRET_KEY=sk_test_your_secret_key_here
-PAYSTACK_PUBLIC_KEY=pk_test_your_public_key_here
-
-# Admin Configuration
-ADMIN_EMAIL=admin@marketplate.com
-ADMIN_PASSWORD=AdminMarketplace2024!
+curl -X POST https://your-domain.vercel.app/api/init-db
 ```
 
-### 6. Firebase Security Rules
+### 4. Create Admin User
 
-1. Deploy the security rules to your Firebase project:
+1. Register a regular user through the app
+2. In Vercel Postgres dashboard, update the user's `type` to `'admin'`:
 
-```bash
-firebase deploy --only firestore:rules
+```sql
+UPDATE users SET type = 'admin' WHERE email = 'your-admin-email@example.com';
 ```
 
-Or manually copy the rules from `firestore.rules` to your Firebase Console.
-
-## 🚀 Deployment to Vercel
-
-### 1. Install Vercel CLI
+### 5. Deploy
 
 ```bash
-npm install -g vercel
-```
-
-### 2. Deploy to Vercel
-
-```bash
-# Login to Vercel
-vercel login
-
-# Deploy the project
 vercel --prod
 ```
 
-### 3. Configure Environment Variables in Vercel
+## API Endpoints
 
-1. Go to your Vercel dashboard
-2. Select your project
-3. Go to Settings → Environment Variables
-4. Add all the environment variables from your `.env.local` file
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user
 
-### 4. Update Firebase Configuration
+### Products
+- `GET /api/products` - Get products (with filters)
+- `POST /api/products` - Create product (seller only)
+- `PUT /api/products` - Update product
 
-After deployment, update your Firebase configuration to allow your Vercel domain:
+### Orders
+- `GET /api/orders` - Get user orders
+- `POST /api/orders` - Create order
 
-1. Go to Firebase Console → Authentication → Settings → Authorized domains
-2. Add your Vercel domain (e.g., `your-app.vercel.app`)
+### Withdrawals
+- `GET /api/withdrawals` - Get user withdrawals
+- `POST /api/withdrawals` - Create withdrawal request
 
-## 👨‍💼 Admin Setup
+### Commissions
+- `GET /api/commissions` - Get user commissions
 
-### First-Time Admin Login
+### Admin
+- `GET /api/admin/users` - Get all users (admin only)
+- `GET /api/admin/orders` - Get all orders (admin only)
+- `GET /api/admin/withdrawals` - Get all withdrawals (admin only)
+- `POST /api/admin/withdrawals` - Approve/reject withdrawals (admin only)
+- `GET /api/admin/commissions` - Get all commissions (admin only)
+- `GET /api/admin/stats` - Get platform statistics (admin only)
 
-1. The admin user is automatically created on first app load
-2. Default credentials:
-   - **Email**: `admin@marketplate.com`
-   - **Password**: `AdminMarketplace2024!`
-3. **Important**: Change the password immediately after first login
+### Uploads
+- `POST /api/uploads` - Upload images to Vercel Blob
 
-### Admin Dashboard Access
+## Database Schema
 
-1. Login with admin credentials
-2. Navigate to Dashboard
-3. Admin panel will be visible in the sidebar
-4. Access comprehensive platform management tools
+The database includes these main tables:
+- `users` - User accounts and profiles
+- `products` - Product catalog
+- `orders` - Order transactions
+- `commissions` - Affiliate commissions
+- `withdrawals` - Withdrawal requests
+- `analytics` - Platform statistics
 
-## 📱 Local Development
-
-### 1. Install Dependencies
+## Development
 
 ```bash
+# Install dependencies
 npm install
-```
 
-### 2. Start Development Server
-
-```bash
+# Run locally
 vercel dev
 ```
 
-The application will be available at `http://localhost:3000`
+## Migration from Firebase
 
-### 3. Testing
+This project has been completely migrated from Firebase to Vercel:
 
-- Use the sample data functions in the browser console:
-  - `populateSampleData()` - Add sample products and users
-  - `clearAllData()` - Clear all test data
+- **Firebase Auth** → JWT with bcrypt
+- **Firestore** → Vercel Postgres
+- **Firebase Storage** → Vercel Blob
+- **Firebase Admin SDK** → Custom API endpoints
 
-## 🔒 Security Features
+All Firebase dependencies have been removed and replaced with Vercel-native solutions.
 
-- Firebase Authentication with email verification
-- Role-based access control (Customer, Seller, Affiliate, Admin)
-- Secure Firestore security rules
-- Admin-only API endpoints
-- Input validation and sanitization
-- CORS protection for API endpoints
+## Security
 
-## 📊 API Endpoints
+- JWT tokens are stored in HttpOnly cookies
+- Password hashing with bcrypt
+- Admin-only endpoints protected with role checks
+- CORS configured for production domains
+- Input validation on all API endpoints
 
-### Admin Endpoints (Serverless Functions)
+## Support
 
-- `POST /api/verify-admin` - Verify admin authentication
-- `POST /api/get-all-users` - Get all platform users
-- `POST /api/get-platform-stats` - Get platform analytics
-- `POST /api/approve-withdrawal` - Approve withdrawal request
-- `POST /api/reject-withdrawal` - Reject withdrawal request
-- `POST /api/get-all-withdrawals` - Get all withdrawal requests
-
-## 🎨 Customization
-
-### Styling
-- Modify `styles.css` for custom themes
-- Update color scheme in CSS variables
-- Customize admin dashboard appearance
-
-### Features
-- Add new user roles in `js/app.js`
-- Extend admin functionality in serverless functions
-- Add new product categories
-- Customize commission rates
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Firebase not initializing**
-   - Check Firebase configuration
-   - Verify API keys are correct
-   - Ensure Firebase services are enabled
-
-2. **Admin dashboard not showing**
-   - Verify admin user exists in Firestore
-   - Check browser console for errors
-   - Ensure admin role is properly set
-
-3. **Payment not working**
-   - Verify Paystack keys are correct
-   - Check Paystack webhook configuration
-   - Ensure test mode is properly configured
-
-4. **Serverless functions failing**
-   - Check environment variables in Vercel
-   - Verify Firebase Admin SDK configuration
-   - Check function logs in Vercel dashboard
-
-### Support
-
-For support and questions:
-- Check the browser console for error messages
-- Review Firebase and Vercel logs
-- Ensure all environment variables are properly set
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📞 Contact
-
-For questions or support, please contact the development team.
-
----
-
-**MarketPlate** - Empowering Ghana's digital marketplace ecosystem.
+For issues or questions, please check the Vercel documentation or create an issue in the repository.

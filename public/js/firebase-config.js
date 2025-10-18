@@ -3,7 +3,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyCtNyYhm6x2ComUYYuUxmXFk6-tfR-mWBs",
     authDomain: "affiliate-web-4f4c9.firebaseapp.com",
     projectId: "affiliate-web-4f4c9",
-    storageBucket: "affiliate-web-4f4c9.firebasestorage.app",
+    storageBucket: "affiliate-web-4f4c9.appspot.com",
     messagingSenderId: "643647499559",
     appId: "1:643647499559:web:a4c9fd8724076834224d02",
     measurementId: "G-PCQZ0LD1Z3"
